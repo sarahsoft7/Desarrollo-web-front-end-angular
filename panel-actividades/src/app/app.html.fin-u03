@@ -1,0 +1,81 @@
+<a href="#contenido">Saltar al contenido</a>
+
+<header>
+  <h1>Panel de actividades</h1>
+  <nav class="navegacion" aria-label="Principal">
+    <ul>
+      <li><a href="#resumen">Resumen</a></li>
+      <li><a href="#filtros">Filtros</a></li>
+      <li><a href="#actividades">Actividades</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="contenido">
+  <p>Organiza tus próximas acciones.</p>
+
+  <section id="filtros" class="panel" aria-labelledby="filtros-titulo">
+    <h2 id="filtros-titulo">Buscar y filtrar</h2>
+
+    <form>
+      <div>
+        <label for="buscar">Buscar actividad</label>
+        <input type="search" id="buscar" name="buscar">
+      </div>
+
+      <div>
+        <label for="estado">Estado</label>
+        <select id="estado" name="estado">
+          <option value="">Todos</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="completada">Completada</option>
+        </select>
+      </div>
+
+      <button type="submit">Aplicar filtros</button>
+    </form>
+  </section>
+
+  <a href="#nueva-actividad">Nueva actividad</a>
+
+  <section id="resumen" class="panel" aria-labelledby="resumen-titulo">
+    <h2 id="resumen-titulo">Resumen</h2>
+    <ul>
+      <li><strong>3</strong> pendientes</li>
+      <li><strong>1</strong> en progreso</li>
+      <li><strong>5</strong> completadas</li>
+    </ul>
+  </section>
+
+  <section id="actividades" class="panel" aria-labelledby="actividades-titulo">
+    <h2 id="actividades-titulo">Actividades recientes</h2>
+
+    <img
+      src="imagenes/panel_ejemplo.svg"
+      alt="Tablero con las columnas pendientes, en progreso y completadas"
+      width="480"
+      height="320"
+    >
+
+    <ol>
+      <li>Preparar estructura HTML</li>
+      <li>Revisar el informe trimestral</li>
+    </ol>
+
+    <article>
+      <h3>Preparar estructura HTML</h3>
+      <p>Definir las regiones de la página antes de darles estilo.</p>
+    </article>
+
+    <article>
+      <h3>Revisar el informe trimestral</h3>
+      <p>Comprobar los totales antes del viernes.</p>
+    </article>
+  </section>
+</main>
+
+<footer>
+  <p>Panel de actividades · Curso de Angular</p>
+</footer>
+
+<router-outlet />
