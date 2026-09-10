@@ -1,6 +1,9 @@
-import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
-import { App } from './app/app';
+const titulo = 'Preparar estructura HTML';
+let cantidadPendiente = 3;
+const panelVisible = true;
 
-bootstrapApplication(App, appConfig)
-  .catch((err) => console.error(err));
+cantidadPendiente = 2;
+
+console.log(titulo);
+console.log(cantidadPendiente);
+console.log(panelVisible);
