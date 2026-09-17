@@ -1,12 +1,21 @@
 import { Component, computed, effect, signal } from '@angular/core';
-import { Actividad, EstadoActividad, FiltroEstado, FiltroPrioridad, Prioridad } from '../modelos/actividad';
+import { Actividad, EstadoActividad, FiltroEstado, FiltroPrioridad, Prioridad } from '../../modelos/actividad';
+import { FiltrosActividades } from '../filtros-actividades/filtros-actividades';
+import { ListaActividades } from '../lista-actividades/lista-actividades';
+import { PanelSeccion } from '../../compartido/panel-seccion/panel-seccion';
 
 @Component({
-  selector: 'app-tablero-prioridades',
-  templateUrl: './tablero-prioridades.html',
-  styleUrl: './tablero-prioridades.css',
+  selector: 'app-pagina-actividades',
+  standalone: true,
+  imports: [
+    FiltrosActividades,
+    ListaActividades,
+    PanelSeccion,
+  ],
+  templateUrl: './pagina-actividades.html',
+  styleUrl: './pagina-actividades.css',
 })
-export class TableroPrioridades {
+export class PaginaActividades {
   private readonly ordenPrioridad: Record<Prioridad, number> = {
     alta: 0,
     media: 1,
@@ -25,13 +34,7 @@ export class TableroPrioridades {
   protected readonly filtroEstado = signal<FiltroEstado>('todas');
   protected readonly filtroPrioridad = signal<FiltroPrioridad>('todas');
   protected readonly seleccionadaId = signal<number | null>(null);
-
-  protected readonly opcionesEstado: readonly FiltroEstado[] = [
-    'todas',
-    'pendiente',
-    'en_progreso',
-    'completada',
-  ];
+  protected readonly ultimoAviso = signal('');
 
   protected readonly total = computed(() => this.actividades().length);
 
@@ -82,11 +85,9 @@ export class TableroPrioridades {
     () => this.actividades().find((a) => a.id === this.seleccionadaId()) ?? null,
   );
 
-  protected readonly haySeleccion = computed(() => this.seleccionada() !== null);
-
   constructor() {
     effect(() => {
-      console.info(`[Tablero] ${this.mostradas()} de ${this.total()} visibles`);
+      console.info(`[Pagina] ${this.mostradas()} de ${this.total()} visibles`);
     });
   }
 
@@ -103,24 +104,15 @@ export class TableroPrioridades {
   }
 
   protected eliminar(id: number): void {
-    this.actividades.update((actuales) => actuales.filter((a) => a.id !== id));
+    const actividad = this.actividades().find((a) => a.id === id);
+
+    if (!actividad || !confirm(`¿Eliminar «${actividad.titulo}»?`)) {
+      return;
+    }
+
+    this.actividades.update((lista) => lista.filter((a) => a.id !== id));
     this.seleccionadaId.update((actual) => (actual === id ? null : actual));
-  }
-
-  protected buscar(evento: Event): void {
-    this.termino.set((evento.target as HTMLInputElement).value);
-  }
-
-  protected cambiarFiltro(estado: FiltroEstado): void {
-    this.filtroEstado.set(estado);
-  }
-
-  protected cambiarFiltroEstado(evento: Event): void {
-    this.filtroEstado.set((evento.target as HTMLSelectElement).value as FiltroEstado);
-  }
-
-  protected cambiarFiltroPrioridad(evento: Event): void {
-    this.filtroPrioridad.set((evento.target as HTMLSelectElement).value as FiltroPrioridad);
+    this.ultimoAviso.set(`Actividad eliminada: ${actividad.titulo}`);
   }
 
   protected limpiarFiltros(): void {
@@ -131,10 +123,6 @@ export class TableroPrioridades {
 
   protected seleccionar(id: number): void {
     this.seleccionadaId.update((actual) => (actual === id ? null : id));
-  }
-
-  protected cerrarDetalle(): void {
-    this.seleccionadaId.set(null);
   }
 
   protected restablecer(): void {

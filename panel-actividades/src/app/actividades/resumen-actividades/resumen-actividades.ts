@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 @Component({
   selector: 'app-resumen-actividades',
+  standalone: true,
   templateUrl: './resumen-actividades.html',
   styleUrl: './resumen-actividades.css',
 })
 export class ResumenActividades {
-  protected readonly total = 4;
-  protected readonly pendientes = 2;
-  protected readonly enProgreso = 1;
-  protected readonly completadas = 1;
+  readonly total = input.required<number>();
+  readonly pendientes = input.required<number>();
+  readonly enProgreso = input.required<number>();
+  readonly completadas = input.required<number>();
+  readonly porcentaje = input(0);
 }

@@ -1,0 +1,48 @@
+<section class="tablero" aria-labelledby="titulo-tablero">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 id="titulo-tablero">Tablero de prioridades</h2>
+    <button type="button" (click)="restablecer()">Vaciar el tablero</button>
+  </div>
+
+  @if (seleccionada(); as elegida) {
+    <p class="seleccion">
+      Seleccionada: <strong>{{ elegida.titulo }}</strong> · creada el {{ elegida.creadaEn }}
+    </p>
+  }
+
+  <section aria-labelledby="titulo-resumen">
+    <h3 id="titulo-resumen">Resumen</h3>
+
+    <ul class="metricas">
+      <li><strong>{{ total() }}</strong><span>Total</span></li>
+      <li><strong>{{ pendientes() }}</strong><span>Pendientes</span></li>
+      <li><strong>{{ enProgreso() }}</strong><span>En progreso</span></li>
+      <li><strong>{{ completadas() }}</strong><span>Completadas</span></li>
+      <li><strong>{{ porcentaje() }}%</strong><span>Completado</span></li>
+    </ul>
+  </section>
+
+  <app-panel-seccion titulo="Buscar y filtrar">
+    <app-filtros-actividades
+      [(termino)]="termino"
+      [(estado)]="filtroEstado"
+      [(prioridad)]="filtroPrioridad" />
+
+    <p aria-live="polite">{{ mostradas() }} de {{ total() }} actividades visibles</p>
+  </app-panel-seccion>
+
+  <app-panel-seccion
+    titulo="Actividades"
+    [descripcion]="mostradas() + ' de ' + total() + ' actividades visibles'">
+
+    <app-lista-actividades
+      [actividades]="visibles()"
+      [seleccionadaId]="seleccionadaId()"
+      [mensajeVacio]="mensajeVacio()"
+      (avanceSolicitado)="avanzarEstado($event)"
+      (eliminacionSolicitada)="eliminar($event)"
+      (seleccionCambiada)="seleccionar($event)" />
+  </app-panel-seccion>
+
+  <p class="aviso" role="status" aria-live="polite">{{ ultimoAviso() }}</p>
+</section>

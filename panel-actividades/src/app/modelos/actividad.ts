@@ -1,6 +1,13 @@
 export type EstadoActividad = 'pendiente' | 'en_progreso' | 'completada';
+export type FiltroEstado = EstadoActividad | 'todas';
+export type Prioridad = 'alta' | 'media' | 'baja';
+export type FiltroPrioridad = Prioridad | 'todas';
 
-export type Prioridad = 'baja' | 'media' | 'alta';
+export const ETIQUETAS: Record<EstadoActividad, string> = {
+  pendiente: 'Pendiente',
+  en_progreso: 'En progreso',
+  completada: 'Completada',
+};
 
 export interface Actividad {
   id: number;
@@ -10,6 +17,3 @@ export interface Actividad {
   creadaEn: string;
   destacada: boolean;
 }
-
-export type FiltroEstado = EstadoActividad | 'todas';
-export type FiltroPrioridad = Prioridad | 'todas';
