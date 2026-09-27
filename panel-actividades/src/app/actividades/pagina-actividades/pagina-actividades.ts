@@ -1,8 +1,9 @@
-import { Component, computed, effect, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Actividad, EstadoActividad, FiltroEstado, FiltroPrioridad, Prioridad } from '../../modelos/actividad';
 import { FiltrosActividades } from '../filtros-actividades/filtros-actividades';
 import { ListaActividades } from '../lista-actividades/lista-actividades';
 import { PanelSeccion } from '../../compartido/panel-seccion/panel-seccion';
+import { ActividadesService } from '../actividades';
 
 @Component({
   selector: 'app-pagina-actividades',
@@ -16,19 +17,15 @@ import { PanelSeccion } from '../../compartido/panel-seccion/panel-seccion';
   styleUrl: './pagina-actividades.css',
 })
 export class PaginaActividades {
+  private readonly servicio = inject(ActividadesService);
+
   private readonly ordenPrioridad: Record<Prioridad, number> = {
     alta: 0,
     media: 1,
     baja: 2,
   };
 
-  protected readonly actividades = signal<Actividad[]>([
-    { id: 1, titulo: 'Preparar estructura HTML', estado: 'completada', prioridad: 'alta', creadaEn: '2026-08-10', destacada: false },
-    { id: 2, titulo: 'Revisar contraste', estado: 'en_progreso', prioridad: 'media', creadaEn: '2026-08-12', destacada: true },
-    { id: 3, titulo: 'Practicar TypeScript', estado: 'pendiente', prioridad: 'alta', creadaEn: '2026-08-14', destacada: false },
-    { id: 4, titulo: 'Comprobar vista estrecha', estado: 'pendiente', prioridad: 'baja', creadaEn: '2026-08-16', destacada: false },
-    { id: 5, titulo: 'Ejecutar el build', estado: 'pendiente', prioridad: 'media', creadaEn: '2026-08-18', destacada: false },
-  ]);
+  protected readonly actividades = this.servicio.actividades;
 
   protected readonly termino = signal('');
   protected readonly filtroEstado = signal<FiltroEstado>('todas');
@@ -36,11 +33,8 @@ export class PaginaActividades {
   protected readonly seleccionadaId = signal<number | null>(null);
   protected readonly ultimoAviso = signal('');
 
-  protected readonly total = computed(() => this.actividades().length);
-
-  protected readonly pendientes = computed(
-    () => this.actividades().filter((a) => a.estado === 'pendiente').length,
-  );
+  protected readonly total = this.servicio.total;
+  protected readonly pendientes = this.servicio.totalPendientes;
 
   protected readonly enProgreso = computed(
     () => this.actividades().filter((a) => a.estado === 'en_progreso').length,
@@ -81,9 +75,10 @@ export class PaginaActividades {
       : 'Ninguna actividad coincide con los filtros aplicados.',
   );
 
-  protected readonly seleccionada = computed(
-    () => this.actividades().find((a) => a.id === this.seleccionadaId()) ?? null,
-  );
+  protected readonly seleccionada = computed(() => {
+    const id = this.seleccionadaId();
+    return id === null ? null : (this.servicio.buscarPorId(id) ?? null);
+  });
 
   constructor() {
     effect(() => {
@@ -92,25 +87,21 @@ export class PaginaActividades {
   }
 
   protected alternarDestacada(id: number): void {
-    this.actividades.update((actuales) =>
-      actuales.map((a) => (a.id === id ? { ...a, destacada: !a.destacada } : a)),
-    );
+    this.servicio.alternarDestacada(id);
   }
 
   protected avanzarEstado(id: number): void {
-    this.actividades.update((actuales) =>
-      actuales.map((a) => (a.id === id ? { ...a, estado: this.siguienteEstado(a.estado) } : a)),
-    );
+    this.servicio.completar(id);
   }
 
   protected eliminar(id: number): void {
-    const actividad = this.actividades().find((a) => a.id === id);
+    const actividad = this.servicio.buscarPorId(id);
 
     if (!actividad || !confirm(`¿Eliminar «${actividad.titulo}»?`)) {
       return;
     }
 
-    this.actividades.update((lista) => lista.filter((a) => a.id !== id));
+    this.servicio.eliminar(id);
     this.seleccionadaId.update((actual) => (actual === id ? null : actual));
     this.ultimoAviso.set(`Actividad eliminada: ${actividad.titulo}`);
   }
@@ -126,7 +117,7 @@ export class PaginaActividades {
   }
 
   protected restablecer(): void {
-    this.actividades.set([]);
+    this.servicio.vaciar();
     this.limpiarFiltros();
     this.seleccionadaId.set(null);
   }

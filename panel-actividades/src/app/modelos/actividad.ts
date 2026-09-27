@@ -17,3 +17,31 @@ export interface Actividad {
   creadaEn: string;
   destacada: boolean;
 }
+
+
+export function esEstadoActividad(valor: unknown): valor is EstadoActividad {
+  return valor === 'pendiente' || valor === 'en_progreso' || valor === 'completada';
+}
+
+export function esPrioridad(valor: unknown): valor is Prioridad {
+  return valor === 'alta' || valor === 'media' || valor === 'baja';
+}
+
+export function esActividad(valor: unknown): valor is Actividad {
+  if (typeof valor !== 'object' || valor === null) return false;
+
+  const a = valor as Record<string, unknown>;
+
+  return (
+    typeof a['id'] === 'number' &&
+    typeof a['titulo'] === 'string' &&
+    esEstadoActividad(a['estado']) &&
+    esPrioridad(a['prioridad']) &&
+    typeof a['creadaEn'] === 'string' &&
+    typeof a['destacada'] === 'boolean'
+  );
+}
+
+export function esListaActividades(valor: unknown): valor is Actividad[] {
+  return Array.isArray(valor) && valor.every(esActividad);
+}
