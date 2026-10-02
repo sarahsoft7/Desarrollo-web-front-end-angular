@@ -19,7 +19,6 @@ export class ActividadesService {
   private readonly almacenamiento = inject(AlmacenamientoService);
 
   private readonly lista = signal<Actividad[]>(this.cargarIniciales());
-
   readonly actividades = this.lista.asReadonly();
 
   readonly total = computed(() => this.lista().length);

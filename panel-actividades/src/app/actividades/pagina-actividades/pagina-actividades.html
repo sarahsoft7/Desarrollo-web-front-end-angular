@@ -4,12 +4,6 @@
     <button type="button" (click)="restablecer()">Vaciar el tablero</button>
   </div>
 
-  @if (seleccionada(); as elegida) {
-    <p class="seleccion">
-      Seleccionada: <strong>{{ elegida.titulo }}</strong> · creada el {{ elegida.creadaEn }}
-    </p>
-  }
-
   <section aria-labelledby="titulo-resumen">
     <h3 id="titulo-resumen">Resumen</h3>
 
@@ -24,9 +18,12 @@
 
   <app-panel-seccion titulo="Buscar y filtrar">
     <app-filtros-actividades
-      [(termino)]="termino"
-      [(estado)]="filtroEstado"
-      [(prioridad)]="filtroPrioridad" />
+      [termino]="termino()"
+      (terminoChange)="cambiarBuscar($event)"
+      [estado]="filtroEstado()"
+      (estadoChange)="cambiarEstado($event)"
+      [prioridad]="filtroPrioridad()"
+      (prioridadChange)="cambiarPrioridad($event)" />
 
     <p aria-live="polite">{{ mostradas() }} de {{ total() }} actividades visibles</p>
   </app-panel-seccion>
@@ -37,12 +34,8 @@
 
     <app-lista-actividades
       [actividades]="visibles()"
-      [seleccionadaId]="seleccionadaId()"
       [mensajeVacio]="mensajeVacio()"
       (avanceSolicitado)="avanzarEstado($event)"
-      (eliminacionSolicitada)="eliminar($event)"
-      (seleccionCambiada)="seleccionar($event)" />
+      (eliminacionSolicitada)="eliminar($event)" />
   </app-panel-seccion>
-
-  <p class="aviso" role="status" aria-live="polite">{{ ultimoAviso() }}</p>
 </section>

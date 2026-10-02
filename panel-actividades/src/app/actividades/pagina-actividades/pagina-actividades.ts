@@ -1,4 +1,5 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Actividad, EstadoActividad, FiltroEstado, FiltroPrioridad, Prioridad } from '../../modelos/actividad';
 import { FiltrosActividades } from '../filtros-actividades/filtros-actividades';
 import { ListaActividades } from '../lista-actividades/lista-actividades';
@@ -18,6 +19,8 @@ import { ActividadesService } from '../actividades';
 })
 export class PaginaActividades {
   private readonly servicio = inject(ActividadesService);
+  private readonly router = inject(Router);
+  private readonly ruta = inject(ActivatedRoute);
 
   private readonly ordenPrioridad: Record<Prioridad, number> = {
     alta: 0,
@@ -25,14 +28,17 @@ export class PaginaActividades {
     baja: 2,
   };
 
+  // Entradas desde la URL
+  readonly buscar = input<string | undefined>('');
+  readonly estado = input<FiltroEstado | undefined>('todas');
+  readonly prioridad = input<FiltroPrioridad | undefined>('todas');
+
+  // Normalización para evitar undefined
+  protected readonly termino = computed(() => this.buscar() ?? '');
+  protected readonly filtroEstado = computed(() => this.estado() ?? 'todas');
+  protected readonly filtroPrioridad = computed(() => this.prioridad() ?? 'todas');
+
   protected readonly actividades = this.servicio.actividades;
-
-  protected readonly termino = signal('');
-  protected readonly filtroEstado = signal<FiltroEstado>('todas');
-  protected readonly filtroPrioridad = signal<FiltroPrioridad>('todas');
-  protected readonly seleccionadaId = signal<number | null>(null);
-  protected readonly ultimoAviso = signal('');
-
   protected readonly total = this.servicio.total;
   protected readonly pendientes = this.servicio.totalPendientes;
 
@@ -75,14 +81,35 @@ export class PaginaActividades {
       : 'Ninguna actividad coincide con los filtros aplicados.',
   );
 
-  protected readonly seleccionada = computed(() => {
-    const id = this.seleccionadaId();
-    return id === null ? null : (this.servicio.buscarPorId(id) ?? null);
-  });
-
   constructor() {
     effect(() => {
       console.info(`[Pagina] ${this.mostradas()} de ${this.total()} visibles`);
+    });
+  }
+
+  // Métodos que navegan para cambiar la URL
+  protected cambiarBuscar(valor: string): void {
+    this.actualizar({ buscar: valor.trim() === '' ? null : valor });
+  }
+
+  protected cambiarEstado(valor: FiltroEstado): void {
+    this.actualizar({ estado: valor === 'todas' ? null : valor });
+  }
+
+  protected cambiarPrioridad(valor: FiltroPrioridad): void {
+    this.actualizar({ prioridad: valor === 'todas' ? null : valor });
+  }
+
+  protected limpiarFiltros(): void {
+    this.actualizar({ buscar: null, estado: null, prioridad: null });
+  }
+
+  private actualizar(cambios: Record<string, string | null>): void {
+    this.router.navigate([], {
+      relativeTo: this.ruta,
+      queryParams: cambios,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 
@@ -102,29 +129,10 @@ export class PaginaActividades {
     }
 
     this.servicio.eliminar(id);
-    this.seleccionadaId.update((actual) => (actual === id ? null : actual));
-    this.ultimoAviso.set(`Actividad eliminada: ${actividad.titulo}`);
-  }
-
-  protected limpiarFiltros(): void {
-    this.termino.set('');
-    this.filtroEstado.set('todas');
-    this.filtroPrioridad.set('todas');
-  }
-
-  protected seleccionar(id: number): void {
-    this.seleccionadaId.update((actual) => (actual === id ? null : id));
   }
 
   protected restablecer(): void {
     this.servicio.vaciar();
     this.limpiarFiltros();
-    this.seleccionadaId.set(null);
-  }
-
-  private siguienteEstado(estado: EstadoActividad): EstadoActividad {
-    if (estado === 'pendiente') return 'en_progreso';
-    if (estado === 'en_progreso') return 'completada';
-    return 'completada';
   }
 }
