@@ -1,7 +1,10 @@
 <section class="tablero" aria-labelledby="titulo-tablero">
   <div style="display: flex; justify-content: space-between; align-items: center;">
     <h2 id="titulo-tablero">Tablero de prioridades</h2>
-    <button type="button" (click)="restablecer()">Vaciar el tablero</button>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a routerLink="/actividades/nueva" class="boton-primario">+ Nueva Actividad</a>
+      <button type="button" (click)="restablecer()">Vaciar el tablero</button>
+    </div>
   </div>
 
   <section aria-labelledby="titulo-resumen">

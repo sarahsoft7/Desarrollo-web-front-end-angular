@@ -24,6 +24,12 @@
     >
       Avanzar estado
     </button>
+    <a
+      [routerLink]="['/actividades', actividad().id, 'editar']"
+      class="boton-editar"
+    >
+      Editar
+    </a>
     <button
       type="button"
       [attr.aria-label]="etiquetaEliminar()"

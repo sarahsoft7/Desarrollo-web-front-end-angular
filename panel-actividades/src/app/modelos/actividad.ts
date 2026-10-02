@@ -18,6 +18,11 @@ export interface Actividad {
   destacada: boolean;
 }
 
+export const LIMITES = {
+  tituloMin: 3,
+  tituloMax: 80,
+  descripcionMax: 300,
+} as const;
 
 export function esEstadoActividad(valor: unknown): valor is EstadoActividad {
   return valor === 'pendiente' || valor === 'en_progreso' || valor === 'completada';

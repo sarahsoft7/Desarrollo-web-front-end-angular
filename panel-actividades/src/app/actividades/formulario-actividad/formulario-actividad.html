@@ -1,0 +1,69 @@
+<form (submit)="crear($event)">
+  <h2>{{ esEdicion() ? 'Editar Actividad' : 'Nueva Actividad' }}</h2>
+
+  @if (mensajeExito()) {
+    <div class="alerta exito" role="status">
+      {{ mensajeExito() }}
+    </div>
+  }
+
+  @if (errorServidor()) {
+    <div class="alerta error" role="alert">
+      {{ errorServidor() }}
+    </div>
+  }
+
+  <div>
+    <label for="titulo">Título</label>
+    <input
+      id="titulo"
+      type="text"
+      [formField]="f.titulo"
+      [attr.aria-invalid]="errorTitulo() || tituloDuplicado()"
+      [attr.aria-describedby]="errorTitulo() || tituloDuplicado() ? 'error-titulo' : null"
+    />
+    <small>Te quedan {{ restantes() }} caracteres.</small>
+
+    @if (errorTitulo()) {
+      <span id="error-titulo" class="error-texto" role="alert">
+        El título debe tener entre {{ LIMITES.tituloMin }} y {{ LIMITES.tituloMax }} caracteres.
+      </span>
+    }
+
+    @if (tituloDuplicado()) {
+      <span id="error-titulo-duplicado" class="error-texto" role="alert">
+        Ya existe una actividad con este título.
+      </span>
+    }
+  </div>
+
+  <div>
+    <label for="descripcion">Descripción</label>
+    <textarea
+      id="descripcion"
+      [formField]="f.descripcion"
+      [attr.aria-invalid]="errorDescripcion()"
+      [attr.aria-describedby]="errorDescripcion() ? 'error-descripcion' : null"
+    ></textarea>
+
+    @if (errorDescripcion()) {
+      <span id="error-descripcion" class="error-texto" role="alert">
+        La descripción no puede superar los {{ LIMITES.descripcionMax }} caracteres.
+      </span>
+    }
+  </div>
+
+  <div>
+    <label for="prioridad">Prioridad</label>
+    <select id="prioridad" [formField]="f.prioridad">
+      <option value="baja">Baja</option>
+      <option value="media">Media</option>
+      <option value="alta">Alta</option>
+    </select>
+  </div>
+
+  <button type="submit" [disabled]="!f().valid() || tituloDuplicado() || guardando()">
+    {{ guardando() ? 'Guardando...' : (esEdicion() ? 'Guardar cambios' : 'Crear actividad') }}
+  </button>
+  <a routerLink="/actividades">Cancelar</a>
+</form>

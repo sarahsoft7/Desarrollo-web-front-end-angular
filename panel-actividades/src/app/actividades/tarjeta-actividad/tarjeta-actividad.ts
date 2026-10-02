@@ -1,9 +1,11 @@
 import { Component, computed, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Actividad, ETIQUETAS } from '../../modelos/actividad';
 
 @Component({
   selector: 'app-tarjeta-actividad',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './tarjeta-actividad.html',
   styleUrl: './tarjeta-actividad.css',
 })

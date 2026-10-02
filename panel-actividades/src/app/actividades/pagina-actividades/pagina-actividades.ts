@@ -1,10 +1,11 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Actividad, EstadoActividad, FiltroEstado, FiltroPrioridad, Prioridad } from '../../modelos/actividad';
 import { FiltrosActividades } from '../filtros-actividades/filtros-actividades';
 import { ListaActividades } from '../lista-actividades/lista-actividades';
 import { PanelSeccion } from '../../compartido/panel-seccion/panel-seccion';
 import { ActividadesService } from '../actividades';
+
 
 @Component({
   selector: 'app-pagina-actividades',
@@ -13,6 +14,7 @@ import { ActividadesService } from '../actividades';
     FiltrosActividades,
     ListaActividades,
     PanelSeccion,
+    RouterLink,
   ],
   templateUrl: './pagina-actividades.html',
   styleUrl: './pagina-actividades.css',
@@ -28,12 +30,11 @@ export class PaginaActividades {
     baja: 2,
   };
 
-  // Entradas desde la URL
+  
   readonly buscar = input<string | undefined>('');
   readonly estado = input<FiltroEstado | undefined>('todas');
   readonly prioridad = input<FiltroPrioridad | undefined>('todas');
 
-  // Normalización para evitar undefined
   protected readonly termino = computed(() => this.buscar() ?? '');
   protected readonly filtroEstado = computed(() => this.estado() ?? 'todas');
   protected readonly filtroPrioridad = computed(() => this.prioridad() ?? 'todas');
@@ -87,7 +88,6 @@ export class PaginaActividades {
     });
   }
 
-  // Métodos que navegan para cambiar la URL
   protected cambiarBuscar(valor: string): void {
     this.actualizar({ buscar: valor.trim() === '' ? null : valor });
   }

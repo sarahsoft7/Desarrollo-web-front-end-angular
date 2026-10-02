@@ -1,5 +1,5 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { Actividad, esListaActividades, EstadoActividad } from '../modelos/actividad';
+import { Actividad, esListaActividades, EstadoActividad, LIMITES, Prioridad } from '../modelos/actividad';
 import { AlmacenamientoService } from '../compartido/almacenamiento';
 
 const CLAVE_ALMACENAMIENTO = 'panel_actividades_v1';
@@ -48,6 +48,65 @@ export class ActividadesService {
       return guardadas;
     }
     return INICIALES.map((a) => ({ ...a }));
+  }
+
+  tituloDisponible(titulo: string, idActual?: number): boolean {
+    const tituloLimpio = titulo.trim().toLowerCase();
+    return !this.lista().some(
+      (a) => a.titulo.trim().toLowerCase() === tituloLimpio && a.id !== idActual
+    );
+  }
+
+  guardar(datos: Omit<Actividad, 'id' | 'creadaEn'>, id?: number): Promise<Actividad> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (!this.tituloDisponible(datos.titulo, id)) {
+          reject(new Error('Ya existe una actividad con este título'));
+          return;
+        }
+
+        if (id) {
+          const existente = this.buscarPorId(id);
+          const actualizada: Actividad = {
+            id,
+            creadaEn: existente ? existente.creadaEn : new Date().toISOString().split('T')[0],
+            ...datos,
+          };
+          this.lista.update((actual) =>
+            actual.map((item) => (item.id === id ? actualizada : item))
+          );
+          resolve(actualizada);
+        } else {
+          const nuevoId = Math.max(0, ...this.lista().map((a) => a.id)) + 1;
+          const nuevaActividad: Actividad = {
+            id: nuevoId,
+            creadaEn: new Date().toISOString().split('T')[0],
+            ...datos,
+          };
+          this.lista.update((actual) => [...actual, nuevaActividad]);
+          resolve(nuevaActividad);
+        }
+      }, 300);
+    });
+  }
+
+  crear(titulo: string, prioridad: Prioridad): Actividad | null {
+    if (titulo.length < LIMITES.tituloMin || titulo.length > LIMITES.tituloMax) {
+      return null;
+    }
+
+    const nuevoId = Math.max(0, ...this.lista().map((a) => a.id)) + 1;
+    const nuevaActividad: Actividad = {
+      id: nuevoId,
+      titulo,
+      prioridad,
+      estado: 'pendiente',
+      creadaEn: new Date().toISOString().split('T')[0],
+      destacada: false,
+    };
+
+    this.lista.update((actual) => [...actual, nuevaActividad]);
+    return nuevaActividad;
   }
 
   buscarPorId(id: number): Actividad | undefined {
