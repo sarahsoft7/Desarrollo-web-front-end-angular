@@ -1,25 +1,20 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { Actividad, esListaActividades, EstadoActividad, LIMITES, Prioridad } from '../modelos/actividad';
-import { AlmacenamientoService } from '../compartido/almacenamiento';
-
-const CLAVE_ALMACENAMIENTO = 'panel_actividades_v1';
-
-const INICIALES: readonly Actividad[] = [
-  { id: 1, titulo: 'Preparar estructura HTML', estado: 'completada', prioridad: 'alta', creadaEn: '2026-08-10', destacada: false },
-  { id: 2, titulo: 'Revisar contraste', estado: 'en_progreso', prioridad: 'media', creadaEn: '2026-08-12', destacada: true },
-  { id: 3, titulo: 'Practicar TypeScript', estado: 'pendiente', prioridad: 'alta', creadaEn: '2026-08-14', destacada: false },
-  { id: 4, titulo: 'Comprobar vista estrecha', estado: 'pendiente', prioridad: 'baja', creadaEn: '2026-08-16', destacada: false },
-  { id: 5, titulo: 'Ejecutar el build', estado: 'pendiente', prioridad: 'media', creadaEn: '2026-08-18', destacada: false },
-];
+import { HttpErrorResponse } from '@angular/common/http';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { catchError, finalize, of } from 'rxjs';
+import { ActividadesApi, DatosActividadRemota, FiltrosConsulta } from '../api/actividades-api';
+import { Actividad, EstadoActividad, LIMITES, Prioridad } from '../modelos/actividad';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ActividadesService {
-  private readonly almacenamiento = inject(AlmacenamientoService);
+  private readonly api = inject(ActividadesApi);
 
-  private readonly lista = signal<Actividad[]>(this.cargarIniciales());
+  private readonly lista = signal<Actividad[]>([]);
+
   readonly actividades = this.lista.asReadonly();
+  readonly cargando = signal(false);
+  readonly error = signal('');
 
   readonly total = computed(() => this.lista().length);
   readonly pendientes = computed(
@@ -37,17 +32,33 @@ export class ActividadesService {
   );
 
   constructor() {
-    effect(() => {
-      this.almacenamiento.guardar(CLAVE_ALMACENAMIENTO, this.lista());
-    });
+    this.cargar();
   }
 
-  private cargarIniciales(): Actividad[] {
-    const guardadas = this.almacenamiento.leerSeguro(CLAVE_ALMACENAMIENTO, esListaActividades);
-    if (guardadas !== null) {
-      return guardadas;
-    }
-    return INICIALES.map((a) => ({ ...a }));
+  cargar(filtros?: FiltrosConsulta): void {
+    this.cargando.set(true);
+    this.error.set('');
+
+    this.api
+      .listar(filtros)
+      .pipe(
+        catchError((e: unknown) => {
+          if (e instanceof HttpErrorResponse) {
+            if (e.status === 0) {
+              this.error.set('No se pudo conectar con el servidor. Revisa tu conexión.');
+            } else if (e.status === 404) {
+              this.error.set('No se encontró el recurso solicitado (404).');
+            } else {
+              this.error.set(`Error en el servidor (${e.status}): ${e.message}`);
+            }
+          } else {
+            this.error.set('Ocurrió un error inesperado al cargar las actividades.');
+          }
+          return of<Actividad[]>([]);
+        }),
+        finalize(() => this.cargando.set(false))
+      )
+      .subscribe((actividades) => this.lista.set(actividades));
   }
 
   tituloDisponible(titulo: string, idActual?: number): boolean {
@@ -59,34 +70,44 @@ export class ActividadesService {
 
   guardar(datos: Omit<Actividad, 'id' | 'creadaEn'>, id?: number): Promise<Actividad> {
     return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (!this.tituloDisponible(datos.titulo, id)) {
-          reject(new Error('Ya existe una actividad con este título'));
-          return;
-        }
+      if (!this.tituloDisponible(datos.titulo, id)) {
+        reject(new Error('Ya existe una actividad con este título'));
+        return;
+      }
 
-        if (id) {
-          const existente = this.buscarPorId(id);
-          const actualizada: Actividad = {
-            id,
-            creadaEn: existente ? existente.creadaEn : new Date().toISOString().split('T')[0],
-            ...datos,
-          };
-          this.lista.update((actual) =>
-            actual.map((item) => (item.id === id ? actualizada : item))
-          );
-          resolve(actualizada);
-        } else {
-          const nuevoId = Math.max(0, ...this.lista().map((a) => a.id)) + 1;
-          const nuevaActividad: Actividad = {
-            id: nuevoId,
-            creadaEn: new Date().toISOString().split('T')[0],
-            ...datos,
-          };
-          this.lista.update((actual) => [...actual, nuevaActividad]);
-          resolve(nuevaActividad);
-        }
-      }, 300);
+      if (id) {
+        const datosRemotos: Partial<DatosActividadRemota> = {
+          titulo: datos.titulo,
+          descripcion: datos.descripcion,
+          prioridad: datos.prioridad,
+          completada: datos.estado === 'completada',
+        };
+
+        this.api.actualizar(id, datosRemotos).subscribe({
+          next: (actualizada) => {
+            this.lista.update((actual) =>
+              actual.map((item) => (item.id === id ? actualizada : item))
+            );
+            resolve(actualizada);
+          },
+          error: () => reject(new Error('No se pudo actualizar la actividad.')),
+        });
+      } else {
+        const datosRemotos: DatosActividadRemota = {
+          titulo: datos.titulo,
+          descripcion: datos.descripcion,
+          prioridad: datos.prioridad,
+          completada: datos.estado === 'completada',
+        };
+
+        this.api.crear(datosRemotos).subscribe({
+          next: (nueva) => {
+            this.lista.update((actual) => [...actual, nueva]);
+            resolve(nueva);
+          },
+          error: () => reject(new Error('No se pudo guardar la actividad.')),
+        });
+      }
     });
   }
 
@@ -99,6 +120,7 @@ export class ActividadesService {
     const nuevaActividad: Actividad = {
       id: nuevoId,
       titulo,
+      descripcion: '',
       prioridad,
       estado: 'pendiente',
       creadaEn: new Date().toISOString().split('T')[0],
@@ -120,9 +142,24 @@ export class ActividadesService {
   }
 
   avanzarEstado(id: number): void {
-    this.lista.update((actual) =>
-      actual.map((a) => (a.id === id ? { ...a, estado: this.siguienteEstado(a.estado) } : a))
-    );
+    const act = this.buscarPorId(id);
+    if (!act) return;
+
+    const nuevoEstado = this.siguienteEstado(act.estado);
+    const esCompletada = nuevoEstado === 'completada';
+
+    this.api.actualizar(id, { completada: esCompletada }).subscribe({
+      next: (actualizada) => {
+        this.lista.update((actual) =>
+          actual.map((a) => (a.id === id ? { ...actualizada, estado: nuevoEstado } : a))
+        );
+      },
+      error: () => {
+        this.lista.update((actual) =>
+          actual.map((a) => (a.id === id ? { ...a, estado: nuevoEstado } : a))
+        );
+      },
+    });
   }
 
   completar(id: number): void {
@@ -130,7 +167,14 @@ export class ActividadesService {
   }
 
   eliminar(id: number): void {
-    this.lista.update((actual) => actual.filter((a) => a.id !== id));
+    this.api.eliminar(id).subscribe({
+      next: () => {
+        this.lista.update((actual) => actual.filter((a) => a.id !== id));
+      },
+      error: () => {
+        this.lista.update((actual) => actual.filter((a) => a.id !== id));
+      },
+    });
   }
 
   vaciar(): void {

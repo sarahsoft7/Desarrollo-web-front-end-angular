@@ -20,13 +20,16 @@
   </section>
 
   <app-panel-seccion titulo="Buscar y filtrar">
-    <app-filtros-actividades
-      [termino]="termino()"
-      (terminoChange)="cambiarBuscar($event)"
-      [estado]="filtroEstado()"
-      (estadoChange)="cambiarEstado($event)"
-      [prioridad]="filtroPrioridad()"
-      (prioridadChange)="cambiarPrioridad($event)" />
+  <app-filtros-actividades
+  [termino]="termino()"
+  [estado]="filtroEstado()"
+  [prioridad]="filtroPrioridad()"
+  [hayFiltros]="hayFiltros()"
+  (buscarCambiado)="cambiarBuscar($event)"
+  (estadoCambiado)="cambiarEstado($event)"
+  (prioridadCambiada)="cambiarPrioridad($event)"
+  (limpiarFiltros)="limpiarFiltros()"
+/>
 
     <p aria-live="polite">{{ mostradas() }} de {{ total() }} actividades visibles</p>
   </app-panel-seccion>
@@ -34,7 +37,14 @@
   <app-panel-seccion
     titulo="Actividades"
     [descripcion]="mostradas() + ' de ' + total() + ' actividades visibles'">
-
+ @if (cargando()) {
+  <p class="cargando" role="status">Cargando actividades…</p>
+} @else if (errorCarga()) {
+  <div class="error-contenedor">
+    <p class="error" role="alert">{{ errorCarga() }}</p>
+    <button type="button" (click)="recargar()">Reintentar</button>
+  </div>
+}
     <app-lista-actividades
       [actividades]="visibles()"
       [mensajeVacio]="mensajeVacio()"

@@ -1,32 +1,34 @@
 import { Routes } from '@angular/router';
-import { PaginaActividades } from './actividades/pagina-actividades/pagina-actividades';
-import { DetalleActividad } from './actividades/detalle-actividad/detalle-actividad';
-import { SeccionActividades } from './actividades/seccion-actividades/seccion-actividades';
-import { PaginaNoEncontrada } from './compartido/pagina-no-encontrada/pagina-no-encontrada';
-import { FormularioActividad } from './actividades/formulario-actividad/formulario-actividad';
+
+export class Rutas {
+  static readonly actividades = 'actividades';
+  static readonly sugerencias = 'sugerencias';
+}
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'actividades', pathMatch: 'full' },
-
   {
-    path: 'actividades',
-    component: SeccionActividades,
-    children: [
-      { path: '', component: PaginaActividades, title: 'Actividades' },
-      { path: 'nueva', component: FormularioActividad, title: 'Nueva actividad' },
-      { path: ':id', component: DetalleActividad, title: 'Detalle de la actividad' },
-      { path: ':id/editar', component: FormularioActividad, title: 'Editar actividad' },
-    ],
+    path: '',
+    pathMatch: 'full',
+    redirectTo: Rutas.actividades,
   },
-
   {
-    path: 'estadisticas',
-    title: 'Estadísticas',
+    path: Rutas.actividades,
+    title: 'Actividades',
     loadComponent: () =>
-      import('./estadisticas/pagina-estadisticas/pagina-estadisticas').then(
-        (m) => m.PaginaEstadisticas,
+      import('./actividades/pagina-actividades/pagina-actividades').then(
+        (m) => m.PaginaActividades,
       ),
   },
-
-  { path: '**', component: PaginaNoEncontrada, title: 'Página no encontrada' },
+  {
+    path: Rutas.sugerencias,
+    title: 'Sugerencias',
+    loadComponent: () =>
+      import('./sugerencias/pagina-sugerencias/pagina-sugerencias').then(
+        (m) => m.PaginaSugerencias,
+      ),
+  },
+  {
+    path: '**',
+    redirectTo: Rutas.actividades,
+  },
 ];

@@ -1,11 +1,10 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Actividad, EstadoActividad, FiltroEstado, FiltroPrioridad, Prioridad } from '../../modelos/actividad';
 import { FiltrosActividades } from '../filtros-actividades/filtros-actividades';
 import { ListaActividades } from '../lista-actividades/lista-actividades';
 import { PanelSeccion } from '../../compartido/panel-seccion/panel-seccion';
 import { ActividadesService } from '../actividades';
-
 
 @Component({
   selector: 'app-pagina-actividades',
@@ -30,14 +29,31 @@ export class PaginaActividades {
     baja: 2,
   };
 
-  
-  readonly buscar = input<string | undefined>('');
-  readonly estado = input<FiltroEstado | undefined>('todas');
-  readonly prioridad = input<FiltroPrioridad | undefined>('todas');
+  private readonly queryParams = signal<Record<string, string>>({});
 
-  protected readonly termino = computed(() => this.buscar() ?? '');
-  protected readonly filtroEstado = computed(() => this.estado() ?? 'todas');
-  protected readonly filtroPrioridad = computed(() => this.prioridad() ?? 'todas');
+  constructor() {
+    this.ruta.queryParams.subscribe((params) => {
+      this.queryParams.set(params as Record<string, string>);
+    });
+
+    effect(() => {
+      console.info(`[Pagina] ${this.mostradas()} de ${this.total()} visibles`);
+    });
+  }
+
+  protected readonly termino = computed(() => (this.queryParams()['buscar'] ?? '').trim());
+
+  protected readonly filtroEstado = computed<FiltroEstado>(() => {
+    const val = this.queryParams()['estado'];
+    if (!val || val === 'todos') return 'todas';
+    return val as FiltroEstado;
+  });
+
+  protected readonly filtroPrioridad = computed<FiltroPrioridad>(() => {
+    const val = this.queryParams()['prioridad'];
+    if (!val || val === 'todas') return 'todas';
+    return val as FiltroPrioridad;
+  });
 
   protected readonly actividades = this.servicio.actividades;
   protected readonly total = this.servicio.total;
@@ -56,37 +72,43 @@ export class PaginaActividades {
   );
 
   protected readonly visibles = computed(() => {
-    const termino = this.termino().trim().toLocaleLowerCase('es');
+    const busqueda = this.termino().toLowerCase();
     const estado = this.filtroEstado();
     const prioridad = this.filtroPrioridad();
 
     return this.actividades()
-      .filter((a) => termino === '' || a.titulo.toLocaleLowerCase('es').includes(termino))
-      .filter((a) => estado === 'todas' || a.estado === estado)
-      .filter((a) => prioridad === 'todas' || a.prioridad === prioridad)
+      .filter((a) => {
+        const coincideTexto =
+          busqueda === '' ||
+          a.titulo.toLowerCase().includes(busqueda) ||
+          a.descripcion.toLowerCase().includes(busqueda);
+
+        const coincideEstado =
+          estado === 'todas' || a.estado === estado;
+
+        const coincidePrioridad =
+          prioridad === 'todas' || a.prioridad === prioridad;
+
+        return coincideTexto && coincideEstado && coincidePrioridad;
+      })
       .sort((a, b) => this.ordenPrioridad[a.prioridad] - this.ordenPrioridad[b.prioridad]);
   });
 
   protected readonly mostradas = computed(() => this.visibles().length);
 
-  protected readonly hayFiltros = computed(
-    () =>
-      this.termino().trim() !== '' ||
-      this.filtroEstado() !== 'todas' ||
-      this.filtroPrioridad() !== 'todas',
-  );
+  protected readonly hayFiltros = computed(() => {
+    const textoActivo = this.termino() !== '';
+    const estadoActivo = this.filtroEstado() !== 'todas';
+    const prioridadActiva = this.filtroPrioridad() !== 'todas';
+
+    return textoActivo || estadoActivo || prioridadActiva;
+  });
 
   protected readonly mensajeVacio = computed(() =>
     this.total() === 0
       ? 'Todavía no hay actividades. Crea la primera para empezar.'
       : 'Ninguna actividad coincide con los filtros aplicados.',
   );
-
-  constructor() {
-    effect(() => {
-      console.info(`[Pagina] ${this.mostradas()} de ${this.total()} visibles`);
-    });
-  }
 
   protected cambiarBuscar(valor: string): void {
     this.actualizar({ buscar: valor.trim() === '' ? null : valor });
@@ -135,4 +157,11 @@ export class PaginaActividades {
     this.servicio.vaciar();
     this.limpiarFiltros();
   }
+
+  protected readonly cargando = this.servicio.cargando;
+  protected readonly errorCarga = this.servicio.error;
+
+  protected recargar(): void {
+    this.servicio.cargar();
+  }  
 }

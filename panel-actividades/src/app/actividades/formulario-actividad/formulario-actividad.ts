@@ -90,18 +90,19 @@ export class FormularioActividad implements OnInit {
     this.mensajeExito.set(null);
 
     try {
-      const { titulo, prioridad } = this.modelo();
-      const id = this.idEdicion();
+const { titulo, descripcion, prioridad } = this.modelo();
+const id = this.idEdicion();
 
-      await this.servicio.guardar(
-        {
-          titulo,
-          prioridad,
-          estado: 'pendiente',
-          destacada: false,
-        },
-        id ?? undefined
-      );
+await this.servicio.guardar(
+  {
+    titulo,
+    descripcion: descripcion ?? '',
+    prioridad,
+    estado: 'pendiente',
+    destacada: false,
+  },
+  id ?? undefined
+);
 
       this.mensajeExito.set(
         id ? 'Actividad actualizada con éxito' : 'Actividad creada con éxito'

@@ -1,36 +1,40 @@
-import { Component, computed, model } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FiltroEstado, FiltroPrioridad } from '../../modelos/actividad';
 
 @Component({
   selector: 'app-filtros-actividades',
   standalone: true,
+  imports: [],
   templateUrl: './filtros-actividades.html',
   styleUrl: './filtros-actividades.css',
 })
 export class FiltrosActividades {
-  readonly termino = model('');
-  readonly estado = model<FiltroEstado>('todas');
-  readonly prioridad = model<FiltroPrioridad>('todas');
+  readonly termino = input<string>('');
+  readonly estado = input<FiltroEstado>('todas');
+  readonly prioridad = input<FiltroPrioridad>('todas');
+  readonly hayFiltros = input<boolean>(false);
 
-  protected readonly hayFiltros = computed(
-    () => this.termino().trim() !== '' || this.estado() !== 'todas' || this.prioridad() !== 'todas',
-  );
+  readonly buscarCambiado = output<string>();
+  readonly estadoCambiado = output<FiltroEstado>();
+  readonly prioridadCambiada = output<FiltroPrioridad>();
+  readonly limpiarFiltros = output<void>();
 
-  protected escribirTermino(evento: Event): void {
-    this.termino.set((evento.target as HTMLInputElement).value);
+  escribirTermino(event: Event): void {
+    const inputElement = event.target as HTMLInputElement;
+    this.buscarCambiado.emit(inputElement.value);
   }
 
-  protected elegirEstado(evento: Event): void {
-    this.estado.set((evento.target as HTMLSelectElement).value as FiltroEstado);
+  elegirEstado(event: Event): void {
+    const selectElement = event.target as HTMLSelectElement;
+    this.estadoCambiado.emit(selectElement.value as FiltroEstado);
   }
 
-  protected elegirPrioridad(evento: Event): void {
-    this.prioridad.set((evento.target as HTMLSelectElement).value as FiltroPrioridad);
+  elegirPrioridad(event: Event): void {
+    const selectElement = event.target as HTMLSelectElement;
+    this.prioridadCambiada.emit(selectElement.value as FiltroPrioridad);
   }
 
-  protected limpiar(): void {
-    this.termino.set('');
-    this.estado.set('todas');
-    this.prioridad.set('todas');
+  limpiar(): void {
+    this.limpiarFiltros.emit();
   }
 }

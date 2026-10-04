@@ -12,6 +12,7 @@ export const ETIQUETAS: Record<EstadoActividad, string> = {
 export interface Actividad {
   id: number;
   titulo: string;
+  descripcion: string;
   estado: EstadoActividad;
   prioridad: Prioridad;
   creadaEn: string;
